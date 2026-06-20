@@ -1,11 +1,11 @@
-import { createContext, useContext, ReactNode, useEffect, useState } from 'react'
+import { createContext, useContext, ReactNode, useEffect, useState, useRef } from 'react'
 import { Task, TaskFormData } from '../types'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import toast from 'react-hot-toast'
 
 interface TaskContextType {
   tasks: Task[]
-  setTasks: React.Dispatch<React.SetStateAction<Task[]>> // Drag & Drop 
+  setTasks: React.Dispatch<React.SetStateAction<Task[]>> // Drag & Drop
   loading: boolean // API loading
   addTask: (task: TaskFormData) => void
   deleteTask: (id: string) => void
@@ -19,33 +19,54 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined)
 export function TaskProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useLocalStorage<Task[]>('employee-tasks', [])
   const [loading, setLoading] = useState(true)
+  const hasFetched = useRef(false)
 
-  // useEffect 1: JSONPlaceholder API For initial tasks loading
+  // useEffect 1: JSONPlaceholder API For initial tasks loading - SSR SAFE
   useEffect(() => {
+    if (hasFetched.current) return
+    hasFetched.current = true
+
     const fetchTasks = async () => {
-      const saved = localStorage.getItem('employee-tasks')
-      if (saved && JSON.parse(saved).length > 0) {
+      // SSR check - window available hone ke baad hi localStorage access kar
+      if (typeof window === 'undefined') {
         setLoading(false)
         return
       }
 
+      const saved = localStorage.getItem('employee-tasks')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setLoading(false)
+            return
+          }
+        } catch (e) {
+          console.error('Failed to parse saved tasks')
+        }
+      }
+
       try {
         const res = await fetch('https://jsonplaceholder.typicode.com/todos?_limit=5')
+        if (!res.ok) throw new Error('API failed')
+
         const data = await res.json()
 
         const apiTasks: Task[] = data.map((item: any) => ({
           id: crypto.randomUUID(),
-          title: item.title,
+          title: item.title.charAt(0).toUpperCase() + item.title.slice(1),
           description: 'Fetched from JSONPlaceholder API',
-          priority: ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)] as any,
+          priority: ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)] as Task['priority'],
           status: item.completed? 'Completed' : 'Pending',
           dueDate: new Date(Date.now() + Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          category: 'General',
           createdAt: new Date().toISOString()
         }))
 
         setTasks(apiTasks)
         toast.success('5 tasks loaded from API!')
       } catch (error) {
+        console.error('API Error:', error)
         toast.error('Failed to load API tasks')
       } finally {
         setLoading(false)
@@ -53,28 +74,36 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
 
     fetchTasks()
-  }, [])
+  }, [setTasks])
 
-  // useEffect 2: Auto-sort tasks by dueDate
+  // useEffect 2: Auto-sort tasks by dueDate - FIXED LOOP
   useEffect(() => {
-    if (!loading) {
-      setTasks(prev =>
-        [...prev].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    if (!loading && tasks.length > 0) {
+      const sorted = [...tasks].sort((a, b) =>
+        new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
       )
-    }
-  }, [loading])
 
-  // useEffect 3: Browser tab title update
+      // Only update if order actually changed
+      const isSameOrder = tasks.every((task, idx) => task.id === sorted[idx]?.id)
+      if (!isSameOrder) {
+        setTasks(sorted)
+      }
+    }
+  }, [loading]) // tasks ko dependency se hata diya - infinite loop fix
+
+  // useEffect 3: Browser tab title update - SSR SAFE
   useEffect(() => {
+    if (typeof window === 'undefined') return
+
     const pendingCount = tasks.filter(t => t.status === 'Pending').length
     document.title = pendingCount > 0
-    ? `(${pendingCount}) Pending Tasks - Dashboard`
-      : 'Employee Task Dashboard'
+     ? `(${pendingCount}) Pending Tasks - TaskFlow`
+      : 'TaskFlow - Dashboard'
   }, [tasks])
 
   const addTask = (taskData: TaskFormData) => {
     const newTask: Task = {
-    ...taskData,
+     ...taskData,
       id: crypto.randomUUID(),
       status: 'Pending',
       createdAt: new Date().toISOString()
@@ -98,7 +127,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const toggleTaskStatus = (id: string) => {
     setTasks(prev => prev.map(task =>
       task.id === id
-      ? {...task, status: task.status === 'Completed'? 'Pending' : 'Completed' }
+       ? {...task, status: task.status === 'Completed'? 'Pending' : 'Completed' }
         : task
     ))
     toast.success('Status updated!')

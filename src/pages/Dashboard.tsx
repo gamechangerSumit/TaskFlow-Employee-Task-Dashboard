@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTasks } from '../context/TaskContext'
-import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { DndContext, closestCenter, DragEndEvent, PointerSensor, useSensor, useSensors, TouchSensor } from '@dnd-kit/core'
 import { SortableContext, arrayMove, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
-import { CheckCircle2, Clock, AlertCircle, ListTodo, Plus } from 'lucide-react'
+import { CheckCircle2, Clock, AlertCircle, ListTodo, Plus, GripVertical } from 'lucide-react'
 import TaskCard from '../components/tasks/TaskCard'
 import Sidebar from '../components/layout/Sidebar'
 import Header from '../components/layout/Header'
@@ -20,21 +20,14 @@ function DraggableTaskCard({ task }: { task: any }) {
   }
 
   return (
-    <div ref={setNodeRef} style={style} className="relative">
+    <div ref={setNodeRef} style={style} className="relative touch-none">
       <div
         {...attributes}
         {...listeners}
-        className="absolute top-2 right-2 cursor-grab active:cursor-grabbing p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 z-10"
+        className="absolute top-2 right-2 cursor-grab active:cursor-grabbing p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 z-10 touch-none"
         title="Drag to reorder"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-gray-400">
-          <circle cx="9" cy="5" r="1.5"/>
-          <circle cx="15" cy="5" r="1.5"/>
-          <circle cx="9" cy="12" r="1.5"/>
-          <circle cx="15" cy="12" r="1.5"/>
-          <circle cx="9" cy="19" r="1.5"/>
-          <circle cx="15" cy="19" r="1.5"/>
-        </svg>
+        <GripVertical className="w-4 h-4 text-gray-400" />
       </div>
       <TaskCard task={task} />
     </div>
@@ -46,10 +39,13 @@ export default function Dashboard() {
   const [filterStatus, setFilterStatus] = useState<'All' | 'Pending' | 'Completed'>('All')
   const [userName, setUserName] = useState<string>('')
 
-  // Load name and listen for changes from Header
   useEffect(() => {
-    const savedName = localStorage.getItem('userName')
-    if (savedName) setUserName(savedName)
+    try {
+      const savedName = localStorage.getItem('userName')
+      if (savedName) setUserName(savedName)
+    } catch (error) {
+      console.error('localStorage error:', error)
+    }
 
     const handleNameChange = (e: CustomEvent) => {
       setUserName(e.detail)
@@ -60,9 +56,8 @@ export default function Dashboard() {
   }, [])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
   )
 
   const completedTasks = tasks.filter(t => t.status === 'Completed').length
@@ -76,9 +71,9 @@ export default function Dashboard() {
 
   const upcomingTasks = useMemo(() => {
     return tasks
- .filter(t => t.status === 'Pending')
- .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
- .slice(0, 4)
+   .filter(t => t.status === 'Pending')
+   .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+   .slice(0, 4)
   }, [tasks])
 
   const chartData = [
@@ -106,7 +101,16 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <p className="text-xl text-gray-600 dark:text-gray-400">Loading...</p>
+        <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400">Loading...</p>
+      </div>
+    )
+  }
+
+  // Safety check - agar tasks undefined hai to crash nahi karega
+  if (!tasks) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <p className="text-lg text-red-600">Error: Tasks not loaded</p>
       </div>
     )
   }
@@ -114,72 +118,72 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <Sidebar />
-      <div className="ml-64">
+      <div className="lg:ml-64">
         <Header />
-        <main className="p-8">
-          <div className="mb-8 flex justify-between items-start">
+        <main className="p-4 md:p-6 lg:p-8">
+          <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 {getGreeting()}, {userName || 'User'}! 👋
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">Here's what's happening with your tasks today.</p>
+              <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">Here's what's happening with your tasks today.</p>
             </div>
-            <Link to="/add" className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-medium">
-              <Plus className="w-5 h-5" />
+            <Link to="/add" className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-4 md:px-5 py-2 md:py-2.5 rounded-lg font-medium text-sm md:text-base transition-all whitespace-nowrap">
+              <Plus className="w-4 h-4 md:w-5 md:h-5" />
               Add Task
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Total Tasks</span>
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                  <ListTodo className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+            <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-xl border border-gray-200 dark:border-gray-800">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Total Tasks</span>
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                  <ListTodo className="w-4 h-4 md:w-5 md:h-5 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{totalTasks}</p>
+              <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1">{totalTasks}</p>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Completed</span>
-                <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-xl border border-gray-200 dark:border-gray-800">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Completed</span>
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-green-600 dark:text-green-400" />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{completedTasks}</p>
+              <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1">{completedTasks}</p>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-600 dark:text-gray-400">In Progress</span>
-                <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+            <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-xl border border-gray-200 dark:border-gray-800">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400">In Progress</span>
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                  <Clock className="w-4 h-4 md:w-5 md:h-5 text-yellow-600 dark:text-yellow-400" />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{pendingTasks}</p>
+              <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1">{pendingTasks}</p>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Overdue</span>
-                <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+            <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-xl border border-gray-200 dark:border-gray-800">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Overdue</span>
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                  <AlertCircle className="w-4 h-4 md:w-5 md:h-5 text-red-600 dark:text-red-400" />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{overdueTasks}</p>
+              <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1">{overdueTasks}</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Task Overview</h3>
-              <div className="flex items-center justify-between">
-                <div className="w-48 h-48">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
+            <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-xl border border-gray-200 dark:border-gray-800">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-4 md:mb-6">Task Overview</h3>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="w-40 h-40 md:w-48 md:h-48">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value">
+                      <Pie data={chartData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value">
                         {chartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
@@ -187,36 +191,36 @@ export default function Dashboard() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2 md:space-y-3">
                   {chartData.map((item) => (
-                    <div key={item.name} className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{item.name}</span>
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{item.value}</span>
+                    <div key={item.name} className="flex items-center gap-2 md:gap-3">
+                      <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                      <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400">{item.name}</span>
+                      <span className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white">{item.value}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Upcoming Deadlines</h3>
+            <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-xl border border-gray-200 dark:border-gray-800">
+              <div className="flex items-center justify-between mb-4 md:mb-6">
+                <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Upcoming Deadlines</h3>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 {upcomingTasks.length === 0? (
-                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">No upcoming tasks</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-6 md:py-8 text-sm">No upcoming tasks</p>
                 ) : (
                   upcomingTasks.map((task) => (
-                    <div key={task.id} className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <ListTodo className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    <div key={task.id} className="flex items-center gap-3 md:gap-4">
+                      <div className="w-9 h-9 md:w-10 md:h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <ListTodo className="w-4 h-4 md:w-5 md:h-5 text-indigo-600 dark:text-indigo-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{task.title}</p>
+                        <p className="text-xs md:text-sm font-medium text-gray-900 dark:text-white truncate">{task.title}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">{task.priority} Priority</p>
                       </div>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                         {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
                     </div>
@@ -226,17 +230,17 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">My Tasks</h3>
-              <div className="flex gap-2">
+          <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-xl border border-gray-200 dark:border-gray-800">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 md:mb-6">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">My Tasks</h3>
+              <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
                 {['All', 'Pending', 'Completed'].map((status) => (
                   <button
                     key={status}
                     onClick={() => setFilterStatus(status as any)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
                       filterStatus === status
-                 ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
+                     ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
                         : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                   >
@@ -247,11 +251,11 @@ export default function Dashboard() {
             </div>
 
             {filteredTasks.length === 0? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-12">No tasks found</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-10 md:py-12 text-sm">No tasks found</p>
             ) : (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={filteredTasks}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
                     {filteredTasks.map(task => (
                       <DraggableTaskCard key={task.id} task={task} />
                     ))}

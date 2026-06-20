@@ -3,40 +3,59 @@ import { useState, useEffect, useRef } from 'react'
 
 export default function Header() {
   const [dark, setDark] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const [showNotif, setShowNotif] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
-  const [userName, setUserName] = useState('User Name')
+  const [userName, setUserName] = useState('User')
   const [isEditing, setIsEditing] = useState(false)
-  const [tempName, setTempName] = useState('User name')
+  const [tempName, setTempName] = useState('User')
+  const [showMobileSearch, setShowMobileSearch] = useState(false)
 
   const notifRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Load name from localStorage
+  // Mount hone ke baad hi localStorage access kar
   useEffect(() => {
-    const savedName = localStorage.getItem('userName')
-    if (savedName) {
-      setUserName(savedName)
-      setTempName(savedName)
+    setMounted(true)
+    
+    // Load name
+    try {
+      const savedName = localStorage.getItem('userName')
+      if (savedName) {
+        setUserName(savedName)
+        setTempName(savedName)
+      }
+    } catch (e) {
+      console.error('localStorage error:', e)
+    }
+
+    // Load theme
+    try {
+      const isDark = localStorage.getItem('theme') === 'dark' || 
+        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      setDark(isDark)
+    } catch (e) {
+      console.error('Theme error:', e)
     }
   }, [])
 
-  // Dark mode setup
+  // Dark mode toggle
   useEffect(() => {
-    const isDark = localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
-    setDark(isDark)
-  }, [])
-
-  useEffect(() => {
-    if (dark) {
-      document.documentElement.classList.add('dark')
-      localStorage.theme = 'dark'
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.theme = 'light'
+    if (!mounted) return
+    
+    try {
+      if (dark) {
+        document.documentElement.classList.add('dark')
+        localStorage.setItem('theme', 'dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+        localStorage.setItem('theme', 'light')
+      }
+    } catch (e) {
+      console.error('Theme save error:', e)
     }
-  }, [dark])
+  }, [dark, mounted])
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -66,10 +85,12 @@ export default function Header() {
     const trimmed = tempName.trim()
     if (trimmed) {
       setUserName(trimmed)
-      localStorage.setItem('userName', trimmed)
-
-      //dasboard event fire
-      window.dispatchEvent(new CustomEvent('userNameChanged', { detail: trimmed }))
+      try {
+        localStorage.setItem('userName', trimmed)
+        window.dispatchEvent(new CustomEvent('userNameChanged', { detail: trimmed }))
+      } catch (e) {
+        console.error('Save name error:', e)
+      }
       setIsEditing(false)
     }
   }
@@ -82,20 +103,51 @@ export default function Header() {
     }
   }
 
+  // Prevent hydration mismatch - render nahi kar jab tak mount nahi hua
+  if (!mounted) {
+    return (
+      <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 md:px-6 lg:px-8 sticky top-0 z-10">
+        <div className="flex-1"></div>
+        <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse"></div>
+      </header>
+    )
+  }
+
   return (
-    <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-8 sticky top-0 z-10">
+    <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 md:px-6 lg:px-8 sticky top-0 z-10">
       <div className="flex-1 max-w-md">
-        <div className="relative">
+        <div className="hidden sm:block relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Search tasks..."
-            className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 outline-none text-gray-900 dark:text-white"
+            className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 outline-none text-gray-900 dark:text-white text-sm"
           />
         </div>
+
+        <button
+          onClick={() => setShowMobileSearch(!showMobileSearch)}
+          className="sm:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+        >
+          <Search className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+        </button>
       </div>
 
-      <div className="flex items-center gap-4">
+      {showMobileSearch && (
+        <div className="absolute top-16 left-0 right-0 p-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sm:hidden z-20">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search tasks..."
+              autoFocus
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 outline-none text-gray-900 dark:text-white text-sm"
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => {
@@ -109,7 +161,7 @@ export default function Header() {
           </button>
 
           {showNotif && (
-            <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-800 p-4 z-20">
+            <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-800 p-4 z-20">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Notifications</h3>
               <div className="space-y-3">
                 <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg">
@@ -142,7 +194,7 @@ export default function Header() {
               setShowProfile(!showProfile)
               setShowNotif(false)
             }}
-            className="w-9 h-9 rounded-full bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center text-white font-medium transition-colors"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center text-white font-medium transition-colors text-sm sm:text-base"
           >
             {userName.charAt(0).toUpperCase()}
           </button>
