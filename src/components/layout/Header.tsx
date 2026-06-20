@@ -15,7 +15,7 @@ export default function Header() {
   const profileRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Mount hone ke baad hi localStorage access kar
+  // MountlocalStorage access
   useEffect(() => {
     setMounted(true)
     
@@ -103,7 +103,7 @@ export default function Header() {
     }
   }
 
-  // Prevent hydration mismatch - render nahi kar jab tak mount nahi hua
+  // Prevent hydration mismatch 
   if (!mounted) {
     return (
       <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 md:px-6 lg:px-8 sticky top-0 z-10">

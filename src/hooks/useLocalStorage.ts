@@ -4,7 +4,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
   const [storedValue, setStoredValue] = useState<T>(initialValue)
   const [mounted, setMounted] = useState(false)
 
-  // Client pe mount hone ke baad localStorage read kar
+  
   useEffect(() => {
     setMounted(true)
     try {
@@ -17,7 +17,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     }
   }, [key])
 
-  // Value change pe localStorage update kar - sirf client pe
+  // Value change localStorage update - only client 
   useEffect(() => {
     if (!mounted) return
     

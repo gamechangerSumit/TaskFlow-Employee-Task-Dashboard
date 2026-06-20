@@ -89,9 +89,9 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         setTasks(sorted)
       }
     }
-  }, [loading]) // tasks ko dependency se hata diya - infinite loop fix
+  }, [loading]) 
 
-  // useEffect 3: Browser tab title update - SSR SAFE
+  // useEffect 3: Browser title update - SSR SAFE
   useEffect(() => {
     if (typeof window === 'undefined') return
 

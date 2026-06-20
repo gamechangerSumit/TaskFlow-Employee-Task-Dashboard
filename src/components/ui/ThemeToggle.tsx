@@ -5,7 +5,7 @@ export default function ThemeToggle() {
   const [dark, setDark] = useState(false)
   const [mounted, setMounted] = useState(false)
 
-  // SSR fix - sirf client pe check kar
+  // SSR fix 
   useEffect(() => {
     setMounted(true)
     const isDark = 

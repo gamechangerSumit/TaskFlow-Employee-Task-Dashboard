@@ -15,12 +15,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     { icon: PlusCircle, label: 'Add Task', path: '/add' },
   ]
 
-  // FIX 1: onClose ko dependency se hataya - warna infinite loop
+  
   useEffect(() => {
     if (isOpen) {
       onClose()
     }
-  }, [location.pathname]) // ← Sirf pathname pe trigger
+  }, [location.pathname]) // pathnametrigger
 
   // FIX 2: Body scroll lock - SSR safe
   useEffect(() => {
