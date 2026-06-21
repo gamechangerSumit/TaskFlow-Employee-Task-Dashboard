@@ -1,22 +1,36 @@
 # TaskFlow - Employee Task Dashboard 🚀
 
-> A production-ready task management system built with React 18, TypeScript & Tailwind CSS
+TaskFlow is a simple and fast task management app. 
 
-Run command- pnpm run
+You can add tasks, set priorities, mark them as complete, and filter them by status. All your data is saved in your browser, so it stays even after you refresh.
+
+A production-ready task management system built with React 18, TypeScript & Tailwind CSS
+
+
+
+#Run command- pnpm run
+
 Why Pnpm-
+
 1.Speed - 2x
+
 2.Disk Space-less compared to npm
+
 3.Strict + Safe
+
 4.Monorepo Support
 
-**Live Demo**: [taskflow-dashboard.vercel.app]((https://task-flow-employee-task-dashboard-7.vercel.app/)) | **GitHub**: [gamechangerSumit/TaskFlow-Employee-Task-Dashboard](https://github.com/gamechangerSumit/TaskFlow-Employee-Task-Dashboard)
+**Live Demo**: https://task-flow-employee-task-dashboard-7.vercel.app/ | **GitHub**: [gamechangerSumit/TaskFlow-Employee-Task-Dashboard](https://github.com/gamechangerSumit/TaskFlow-Employee-Task-Dashboard)
 
 ## 📸 Screenshots
 
-Dashboard - (./public/Dashboard.png))
-Add New Task - (./public/AddTask.png)
-Edit Task - (./public/EditTask.png) 
-Dark Mode - (./public/DarkMode.png)
+Dashboard - ![Dashboard](./public/Dashboard.png)
+
+Add New Task - ![Add Task](./public/AddTask.png)
+
+Edit Task - ![Edit Task](./public/EditTask.png) 
+
+Dark Mode - ![Dark Mode](./public/DarkMode.png)
 
 ## 🎯 Problem It Solves
 
@@ -51,56 +65,100 @@ It Manages Employees daily tasks instead of use Excel or paper. **TaskFlow** is 
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology | Why Used |
+| Layer | Technology | Why Used 
+
 | **Framework** | React 18.3 | Component-based, Virtual DOM, Hooks |
+
 | **Language** | TypeScript 5.6 | Type safety, IntelliSense, Fewer bugs |
+
 | **Build Tool** | Vite 6.0 | Fast HMR, Optimized builds, ESM |
+
 | **Styling** | Tailwind CSS 3.4 | Utility-first, Responsive, No CSS files |
+
 | **Routing** | React Router DOM 6 | SPA navigation, Dynamic routes |
+
 | **Icons** | Lucide React | Tree-shakeable, Consistent design |
+
 | **State** | Context API + Hooks | No Redux needed, Built-in React |
+
 | **Storage** | LocalStorage API | Client-side persistence, No backend |
+
 | **Linting** | ESLint + TS ESLint | Code quality, Consistent style |
 
 ## 📁 Project Structure
 
 TaskFlow-Employee-Task-Dashboard/
+
 ├── public/
+
 │   └── vite.svg
+
 ├── src/
+
 │   ├── components/
+
 │   │   ├── task/
+
 │   │   │   ├── TaskCard.tsx       # Single task display card
+
 │   │   │   ├── TaskForm.tsx       # Reusable add/edit form
+
 │   │   │   ├── TaskList.tsx       # Grid of all tasks
+
 │   │   │   └── TaskFilter.tsx     # Search + filter controls
 │   │   └── ui/
 │   │       ├── Button.tsx         # Primary/Danger/Secondary
+
 │   │       ├── Input.tsx          # Text/Date/Select/Textarea
+
 │   │       ├── Badge.tsx          # Priority/Status badges
+
 │   │       ├── Layout.tsx         # Page wrapper + header
+
 │   │       └── StatCard.tsx       # Dashboard metric cards
+
 │   ├── context/
+
 │   │   └── TaskContext.tsx        # Global task state + CRUD
+
 │   ├── hooks/
+
 │   │   └── useTasks.ts            # Custom hook for task ops
+
 │   ├── pages/
+
 │   │   ├── Dashboard.tsx          # Main page - /
+
 │   │   ├── AddTask.tsx            # Create page - /add-task
+
 │   │   └── EditTask.tsx           # Update page - /edit/:id
+
 │   ├── types/
+
 │   │   └── task.ts                # Task, Priority, Status types
+
 │   ├── utils/
+
 │   │   └── validateTaskForm.ts    # Form validation logic
+
 │   ├── App.tsx                    # Router setup
+
 │   ├── main.tsx                   # React DOM render
+
 │   └── index.css                  # Tailwind directives
+
 ├── .eslintrc.cjs                  # ESLint config
+
 ├── .gitignore                     # Git ignore rules
+
 ├── index.html                     # Entry HTML
+
 ├── package.json                   # Dependencies
+
 ├── tailwind.config.js             # Tailwind config
+
 ├── tsconfig.json                  # TS config
+
 └── vite.config.ts                 # Vite config
 
 
